@@ -4,8 +4,6 @@ import re
 
 app = Flask(__name__)
 
-# ... (El resto del código anterior permanece igual)
-
 # Base de datos actualizada con TODOS los distritos de Chiclayo
 distritos_data = {
     "pucalá": {"poblacion": "9,062", "electores": "6,784", "electores_hombres": "3,314 (48.850%)", "electores_mujeres": "3,470 (51.150%)"},
@@ -29,8 +27,6 @@ distritos_data = {
     "oyotun": {"poblacion": "8,268", "electores": "6,873", "electores_hombres": "3,479 (50.618%)", "electores_mujeres": "3,394 (49.382%)"}
 }
 
-## ... (El resto del código, incluyendo la función buscar_datos_distrito y el endpoint /whatsapp, permanece igual)
-
 def buscar_datos_distrito(mensaje):
     """Busca el nombre del distrito en el mensaje del usuario."""
     mensaje = mensaje.lower().strip()
@@ -39,33 +35,61 @@ def buscar_datos_distrito(mensaje):
             return distrito
     return None
 
+def obtener_lista_distritos():
+    """Genera una lista formateada de todos los distritos disponibles."""
+    distritos_ordenados = sorted(distritos_data.keys())
+    lista = ""
+    for i, distrito in enumerate(distritos_ordenados, 1):
+        # Formatea el nombre con mayúsculas iniciales
+        nombre_formateado = distrito.title()
+        lista += f"{i}. {nombre_formateado}\n"
+    return lista
+
 @app.route("/whatsapp", methods=["POST"])
 def whatsapp_bot():
     # El mensaje entrante del usuario
-    mensaje_usuario = request.values.get("Body", "").lower()
+    mensaje_usuario = request.values.get("Body", "").lower().strip()
     respuesta = MessagingResponse()
     mensaje_respuesta = respuesta.message()
 
-    # Lógica para buscar el distrito
-    distrito_encontrado = buscar_datos_distrito(mensaje_usuario)
-
-    if distrito_encontrado:
-        datos = distritos_data[distrito_encontrado]
-        # Formatea la respuesta
-        texto_respuesta = (f"*Datos de {distrito_encontrado.title()}*\n\n"
-                           f"👥 Población estimada (2022): {datos['poblacion']}\n"
-                           f"🗳️ Electores (2025): {datos['electores']}\n"
-                           f"   👨 Hombres: {datos['electores_hombres']}\n"
-                           f"   👩 Mujeres: {datos['electores_mujeres']}")
-    elif "hola" in mensaje_usuario or "ayuda" in mensaje_usuario:
-        texto_respuesta = ("*Hola* 👋\nPregúntame por los datos de un distrito de Lambayeque.\n"
-                           "*Ejemplo:* \"¿Cuántos electores hay en Pimentel?\"")
+    # Lógica principal del bot
+    if mensaje_usuario in ["hola", "hi", "hello", "ayuda", "help"]:
+        texto_respuesta = ("*Hola* 👋\nPregúntame por los datos de un distrito de Lambayeque.\n\n"
+                           "*Ejemplos:*\n"
+                           "• \"Pimentel\"\n"
+                           "• \"¿Cuántos electores hay en Monsefú?\"\n"
+                           "• \"Datos de La Victoria\"\n\n"
+                           "*Comandos especiales:*\n"
+                           "• Escribe *\"distritos\"* para ver la lista completa.")
+    
+    elif mensaje_usuario in ["distritos", "distrito", "lista", "listar"]:
+        lista = obtener_lista_distritos()
+        texto_respuesta = (f"*📋 DISTRITOS DISPONIBLES*\n\n"
+                          f"Tengo información de {len(distritos_data)} distritos:\n\n"
+                          f"{lista}\n"
+                          f"_Solo dime el nombre del distrito que te interesa._")
+    
     else:
-        texto_respuesta = ("No encontré ese distrito en la base de datos. "
-                           "Prueba con nombres como: *Pimentel, José Leonardo Ortiz, Picsi, Tuman*.")
+        # Buscar si el mensaje contiene un distrito
+        distrito_encontrado = buscar_datos_distrito(mensaje_usuario)
+        
+        if distrito_encontrado:
+            datos = distritos_data[distrito_encontrado]
+            texto_respuesta = (f"*DATOS DE {distrito_encontrado.upper()}*\n\n"
+                              f"👥 *Población estimada (2022):* {datos['poblacion']}\n"
+                              f"🗳️ *Electores (al 10/06/2025):* {datos['electores']}\n"
+                              f"   👨 Hombres: {datos['electores_hombres']}\n"
+                              f"   👩 Mujeres: {datos['electores_mujeres']}\n\n"
+                              f"_Fuente: Infogob JNE_")
+        else:
+            texto_respuesta = ("*No encontré ese distrito.* 🤔\n\n"
+                              "Puedes:\n"
+                              "1. Escribir *\"distritos\"* para ver la lista completa\n"
+                              "2. Verificar la ortografía\n"
+                              "3. Preguntar por ejemplo: *\"Pimentel\"* o *\"Monsefú\"*")
 
     mensaje_respuesta.body(texto_respuesta)
     return str(respuesta)
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000)
