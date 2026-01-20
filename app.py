@@ -29,7 +29,7 @@ distritos_data = {
     "oyotun": {"poblacion": "8,268", "electores": "6,873", "electores_hombres": "3,479 (50.618%)", "electores_mujeres": "3,394 (49.382%)"}
 }
 
-# ... (El resto del código, incluyendo la función buscar_datos_distrito y el endpoint /whatsapp, permanece igual)
+## ... (El resto del código, incluyendo la función buscar_datos_distrito y el endpoint /whatsapp, permanece igual)
 
 def buscar_datos_distrito(mensaje):
     """Busca el nombre del distrito en el mensaje del usuario."""
